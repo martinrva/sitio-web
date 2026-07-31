@@ -346,33 +346,27 @@
 </div>
 </header>
 <main>
-<!-- Hero Section with Apple-style Sticky Canvas Scroll-scrub (Dual-Mode HTTP/File Fallback) -->
+<!-- Hero Section -->
 <div class="relative h-screen" id="hero-scroll-track">
     <section class="relative h-screen w-full flex items-center justify-center overflow-hidden bg-background">
-        <!-- Experience Loader (glassmorphism spinner shown while preloading video frames in RAM on HTTP/HTTPS) -->
-        <div id="experience-loader" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/95 backdrop-blur-md transition-opacity duration-500">
-            <div class="flex flex-col items-center gap-4">
-                <div class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-                <p class="font-label-lg text-label-lg uppercase tracking-widest text-primary animate-pulse">Preparando Experiencia</p>
-                <span id="loader-progress" class="font-body-sm text-body-sm text-on-surface-variant font-mono">0%</span>
-            </div>
-        </div>
-        
-        <!-- Canvas for ultra-smooth 60fps scrolling playback (Apple method, active on http/https) -->
-        <div id="canvas-container" class="absolute inset-0 z-0 opacity-45 overflow-hidden w-full h-full">
-            <canvas id="apple-canvas" class="w-full h-full object-cover object-center"></canvas>
-        </div>
-        
-        <!-- Video fallback for local file:// protocol (ultra-smooth CSS zoom loop, active on file:// to bypass browser sandboxing) -->
-        <div id="video-container" class="absolute inset-0 z-0 opacity-45 overflow-hidden w-full h-full hidden">
-            <!-- Unifying soft overlay to blend color grading and normalize contrast/exposure -->
+
+        <!-- Native HTML5 video background -->
+        <div class="absolute inset-0 z-0 overflow-hidden">
+            <!-- Warm unifying overlay -->
             <div class="absolute inset-0 pointer-events-none z-10" style="background: rgba(30, 26, 24, 0.08); mix-blend-mode: multiply;"></div>
-            
-            <video id="scroll-video" autoplay muted playsinline class="absolute inset-0 w-full h-full object-cover object-center transition-all duration-75 ease-out" style="opacity: 1; transition: opacity 0.35s ease-in-out; z-index: 1; filter: brightness(0.95) contrast(1.02) saturate(0.95);">
+            <video
+                id="hero-video"
+                autoplay
+                loop
+                muted
+                playsinline
+                poster="foto%20sector%20pelo.webp"
+                style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; opacity:0.45; filter: brightness(0.95) contrast(1.02) saturate(0.95);"
+            >
                 <source src="video%20final%20sin%20marca.mp4" type="video/mp4">
             </video>
         </div>
-        
+
         <div id="hero-content" class="relative z-10 text-center flex flex-col items-center max-w-3xl mx-auto px-margin-mobile md:px-margin-desktop fade-in visible transition-all duration-75">
             <h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-6">
                 Sweetdepyl
@@ -1381,40 +1375,19 @@
                 updateHeaderBg();
             }
 
-            // Apple-style Canvas Image Sequence Scrubbing & Local Fallback
-            const canvas = document.getElementById('apple-canvas');
-            const canvasContainer = document.getElementById('canvas-container');
-            const videoContainer = document.getElementById('video-container');
-            const videoFallback = document.getElementById('scroll-video');
-            const track = document.getElementById('hero-scroll-track');
+            // Lightweight scroll handler: fade hero text out as user scrolls down
             const heroContent = document.getElementById('hero-content');
-            const loader = document.getElementById('experience-loader');
-            const progressText = document.getElementById('loader-progress');
             
             // Check if we are running locally via file:// protocol
-            const isLocalFile = window.location.protocol === 'file:';
-            
-            function updateLocalScroll() {
+            // Simple scroll handler: fade hero text and video as user scrolls down
+            const heroVideo = document.getElementById('hero-video');
+
+            function updateHeroScroll() {
                 const scrolled = window.scrollY;
                 const windowHeight = window.innerHeight;
-                
-                let progress = scrolled / windowHeight;
-                progress = Math.max(0, Math.min(1, progress));
+                let progress = Math.max(0, Math.min(1, scrolled / windowHeight));
 
-                // Smooth CSS Zoom/Parallax effects (reduced zoom for a cleaner fit)
-                const scale = 1.06 - (progress * 0.06);
-                const translateY = progress * 60;
-                const blur = progress * 6;
-                const opacity = 0.45 - (progress * 0.30);
-
-                const transformStr1 = `scale(${scale}) translateY(${translateY}px)`;
-                const filterStr = `blur(${blur}px)`;
-
-                videoFallback.style.transform = transformStr1;
-                videoFallback.style.filter = filterStr;
-                videoContainer.style.opacity = opacity;
-
-                // Text fade out on scroll
+                // Fade and lift hero text
                 if (heroContent) {
                     if (progress > 0.1) {
                         const fadeProgress = (progress - 0.1) / 0.6;
@@ -1425,198 +1398,16 @@
                         heroContent.style.transform = 'translateY(0)';
                     }
                 }
-            }
-            
-            if (canvas && track) {
-                // FALLBACK MODE FOR LOCAL file:// PROTOCOL
-                // Browsers block pixel extraction (Canvas toDataURL/drawImage) on local files due to CORS sandbox security rules.
-                if (isLocalFile) {
-                    console.log("Local file:// protocol detected. Activating GPU-accelerated Video Fallback mode to bypass CORS restrictions.");
-                    
-                    if (loader) loader.style.display = 'none';
-                    if (canvasContainer) canvasContainer.classList.add('hidden');
-                    if (videoContainer) videoContainer.classList.remove('hidden');
-                    
-                    if (videoFallback) {
-                        videoFallback.play().catch(e => console.log("Autoplay prevented: ", e));
-                        
-                        window.addEventListener('scroll', updateLocalScroll, { passive: true });
-                        window.addEventListener('resize', updateLocalScroll, { passive: true });
-                        updateLocalScroll();
-                    }
-                    return;
-                }
 
-                // APPLE CANVAS SCRUBBING MODE (HTTP/HTTPS Servers & Google Stitch)
-                const ctx = canvas.getContext('2d');
-                const frames = [];
-                const totalFrames = 75;
-                let loadedFrames = 0;
-                let currentFrameIndex = 0;
-
-                const hiddenVideo = document.createElement('video');
-                hiddenVideo.muted = true;
-                hiddenVideo.playsInline = true;
-                hiddenVideo.src = 'video%20final%20sin%20marca.mp4'; // URL encoded path
-
-                const fallbackImage = new Image();
-                fallbackImage.src = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDB9peogkXxGqAMlRwq1e9EDMBLXsnffnAS82i86GBGly6XHYznLsbBjE_77xoP3-Coz8r78Udnw63bnWuqo_ms00Adhx8cHsRICe6YAdpi5juqFEAWGdYqcrq3COEA6FL3dq7CosRdZDWUSIRl3FaiZqtB8iWbmL1z1fa-hdg0UfM5S57PNm1A5W7XMMbj7hyRCoSmeEGKjQjX3yPiv2HqoOk1djt6rzoS5EdCsTlMMGk1QVc1XT-lNXd4NJVCfTerNIKilNmvUZM';
-
-                hiddenVideo.addEventListener('loadedmetadata', async () => {
-                    const duration = hiddenVideo.duration || 3;
-                    const captureCanvas = document.createElement('canvas');
-                    const captureCtx = captureCanvas.getContext('2d');
-                    
-                    captureCanvas.width = 640;
-                    captureCanvas.height = 360;
-
-                    try {
-                        for (let i = 0; i < totalFrames; i++) {
-                            const targetTime = (i / (totalFrames - 1)) * duration;
-                            hiddenVideo.currentTime = targetTime;
-                            
-                            await new Promise((resolve, reject) => {
-                                const onSeeked = () => {
-                                    hiddenVideo.removeEventListener('seeked', onSeeked);
-                                    try {
-                                        captureCtx.drawImage(hiddenVideo, 0, 0, captureCanvas.width, captureCanvas.height);
-                                        const img = new Image();
-                                        img.src = captureCanvas.toDataURL('image/jpeg', 0.65);
-                                        img.onload = () => {
-                                            frames[i] = img;
-                                            loadedFrames++;
-                                            const percent = Math.round((loadedFrames / totalFrames) * 100);
-                                            if (progressText) progressText.innerText = `${percent}%`;
-                                            resolve();
-                                        };
-                                    } catch (e) {
-                                        reject(e);
-                                    }
-                                };
-                                hiddenVideo.addEventListener('seeked', onSeeked);
-                            });
-                        }
-                        startExperience();
-                    } catch (corsError) {
-                        console.warn("CORS Security violation during frame extraction. Switching to Video Fallback.", corsError);
-                        activateLocalFallback();
-                    }
-                });
-
-                const timeoutId = setTimeout(() => {
-                    if (loadedFrames < totalFrames) {
-                        console.warn("Preloading timed out. Applying fallback static image.");
-                        for (let i = 0; i < totalFrames; i++) {
-                            frames[i] = fallbackImage;
-                        }
-                        startExperience();
-                    }
-                }, 5000);
-
-                function activateLocalFallback() {
-                    clearTimeout(timeoutId);
-                    if (loader) loader.style.display = 'none';
-                    if (canvasContainer) canvasContainer.classList.add('hidden');
-                    if (videoContainer) videoContainer.classList.remove('hidden');
-                    if (videoFallback) {
-                        videoFallback.play().catch(e => console.log("Play failed: ", e));
-                        // Re-bind scroll to video fallback
-                        window.addEventListener('scroll', updateLocalScroll, { passive: true });
-                        window.addEventListener('resize', updateLocalScroll, { passive: true });
-                        updateLocalScroll();
-                    }
-                }
-
-                function startExperience() {
-                    clearTimeout(timeoutId);
-                    if (loader) {
-                        loader.style.opacity = 0;
-                        setTimeout(() => loader.style.display = 'none', 500);
-                    }
-                    
-                    window.addEventListener('resize', resizeCanvas);
-                    resizeCanvas();
-                    
-                    window.addEventListener('scroll', updateScroll, { passive: true });
-                    updateScroll();
-                }
-
-                function drawFrame(index) {
-                    const img = frames[index];
-                    if (!img || !img.complete) return;
-
-                    const w = canvas.width / (window.devicePixelRatio || 1);
-                    const h = canvas.height / (window.devicePixelRatio || 1);
-                    
-                    ctx.clearRect(0, 0, w, h);
-                    
-                    const imgRatio = img.width / img.height;
-                    const canvasRatio = w / h;
-                    let sx = 0, sy = 0, sWidth = img.width, sHeight = img.height;
-
-                    if (imgRatio > canvasRatio) {
-                        sWidth = img.height * canvasRatio;
-                        sx = (img.width - sWidth) / 2;
-                    } else {
-                        sHeight = img.width / canvasRatio;
-                        sy = (img.height - sHeight) / 2;
-                    }
-
-                    const scrolled = window.scrollY;
-                    const windowHeight = window.innerHeight;
-                    let progress = scrolled / windowHeight;
-                    progress = Math.max(0, Math.min(1, progress));
-
-                    const scale = 1.02 - (progress * 0.02);
-                    const translateY = progress * 40;
-
-                    ctx.save();
-                    ctx.translate(w / 2, h / 2 + translateY);
-                    ctx.scale(scale, scale);
-                    ctx.drawImage(img, sx, sy, sWidth, sHeight, -w / 2, -h / 2, w, h);
-                    ctx.restore();
-                }
-
-                function resizeCanvas() {
-                    const rect = canvas.getBoundingClientRect();
-                    const dpr = window.devicePixelRatio || 1;
-                    canvas.width = rect.width * dpr;
-                    canvas.height = rect.height * dpr;
-                    ctx.scale(dpr, dpr);
-                    
-                    drawFrame(currentFrameIndex);
-                }
-
-                function updateScroll() {
-                    const scrolled = window.scrollY;
-                    const windowHeight = window.innerHeight;
-                    
-                    let progress = scrolled / windowHeight;
-                    progress = Math.max(0, Math.min(1, progress));
-
-                    const frameIndex = Math.floor(progress * (totalFrames - 1));
-                    if (frameIndex !== currentFrameIndex && frames[frameIndex]) {
-                        currentFrameIndex = frameIndex;
-                        drawFrame(currentFrameIndex);
-                    }
-
-                    if (heroContent) {
-                        if (progress > 0.1) {
-                            const fadeProgress = (progress - 0.1) / 0.6;
-                            heroContent.style.opacity = Math.max(0, 1 - fadeProgress);
-                            heroContent.style.transform = `translateY(${-fadeProgress * 50}px)`;
-                        } else {
-                            heroContent.style.opacity = 1;
-                            heroContent.style.transform = 'translateY(0)';
-                        }
-                    }
-
-                    const opacity = 0.45 - (progress * 0.25);
-                    const blur = progress * 6;
-                    canvas.style.filter = `blur(${blur}px)`;
-                    canvas.parentElement.style.opacity = opacity;
+                // Fade video out as page scrolls
+                if (heroVideo) {
+                    const videoOpacity = 0.45 - (progress * 0.30);
+                    heroVideo.style.opacity = Math.max(0, videoOpacity);
                 }
             }
+
+            window.addEventListener('scroll', updateHeroScroll, { passive: true });
+            updateHeroScroll();
         });
     </script>
 
