@@ -329,7 +329,7 @@
 <header id="main-header" class="fixed top-0 left-0 right-0 z-50 bg-transparent transition-all duration-300 ease-out">
 <div class="flex justify-between items-center w-full px-margin-desktop max-w-container-max mx-auto py-4">
 <a class="flex items-center" href="#">
-<img alt="Sweetdepyl" class="h-[60px] md:h-[65px] w-auto object-contain transition-all duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8sf4UXYGn8hdu5-T927kCDEidOrE1X8S1rig0sS8adyO0_T3USZb6swlDIxA71irL3nCcxOO1T0fBthJPfsBaaywb2_DyH_EXjrQcf5UphbYH0lle3j8HoaC8IkEXx-PO0v1epwBIakbwx6QX8l456kei4-BxmEN_gQVVqo2PkYCgmRW-2SdXHi1UF6HjDMi4Y5MzBlpfA2rEboGjyfp5_OqfVbo12olJwWGL2LIaOochQadlmOhT85WCUc7zQTueXOKNLjOCcsU"/>
+<img alt="Sweetdepyl" class="h-[60px] md:h-[65px] w-auto object-contain transition-all duration-300" src="logo.png"/>
 </a>
 <nav class="hidden md:flex gap-8 items-center">
 <a class="font-label-lg text-label-lg text-on-surface-variant hover:text-primary transition-colors duration-300 nav-link" href="#servicios">Servicios</a>
@@ -2505,20 +2505,16 @@
         var selected = activeSelectedServices[modalId];
         if (!selected || !selected.name) return;
 
-        // Build message with real newline characters
+        // Build display name (include size for peluqueria variants)
         var displayName = selected.name;
         if (modalId === 'peluqueria-modal' && selected.hasVariants && selected.size) {
             displayName = selected.name + ' (' + selected.size + ')';
         }
 
-        var lines = [
-            'Hola, quiero consultar por el servicio: ' + displayName + '.',
-            'Precio: ' + selected.price + '.',
-            'Duraci\u00f3n: ' + selected.duration + '.'
-        ];
-        var message = lines.join('\n');
+        // Simple, friendly message — no price or duration
+        var message = 'Hola Sweetdepyl 🌸 Quiero consultar por el servicio ' + displayName + '. ¿Me pueden decir qué horarios tienen disponibles?';
 
-        // Encode and open directly to WhatsApp chat (wa.me/NUMERO format avoids contact picker on mobile)
+        // Open directly in WhatsApp chat with business number
         var url = 'https://wa.me/56977598087?text=' + encodeURIComponent(message);
         window.open(url, '_blank', 'noopener,noreferrer');
     }
