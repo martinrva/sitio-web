@@ -340,11 +340,41 @@
                 Reserva tu hora
             </a>
 <!-- Mobile Menu Button -->
-<button class="md:hidden text-primary">
+<button id="mobile-menu-btn" class="md:hidden text-primary p-2" aria-label="Abrir menú" aria-expanded="false">
 <span class="material-symbols-outlined">menu</span>
 </button>
 </div>
 </header>
+
+<!-- Mobile Menu Dropdown -->
+<div id="mobile-menu" class="fixed top-0 left-0 right-0 bottom-0 z-40 pointer-events-none">
+    <!-- Backdrop -->
+    <div id="mobile-menu-backdrop" class="absolute inset-0 bg-black/40 opacity-0 transition-opacity duration-300"></div>
+    <!-- Panel -->
+    <nav id="mobile-menu-panel" class="absolute top-0 right-0 h-full w-72 max-w-[85vw] flex flex-col gap-0 shadow-2xl transition-transform duration-300 translate-x-full"
+         style="background:#FAF8F5;">
+        <!-- Close button -->
+        <div class="flex justify-between items-center px-6 py-5 border-b border-[#E8D5CF]/40">
+            <span class="font-display-lg text-[#2C2420] text-lg tracking-wide" style="font-family:'Playfair Display',serif;">Sweetdepyl</span>
+            <button id="mobile-menu-close" class="text-[#8C7B76] hover:text-primary transition-colors" aria-label="Cerrar menú">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <!-- Nav Links -->
+        <div class="flex flex-col px-6 py-6 gap-1 flex-1">
+            <a href="#servicios" class="mobile-nav-link font-label-lg text-[#2C2420] text-base py-4 border-b border-[#E8D5CF]/30 hover:text-primary transition-colors duration-200">Servicios</a>
+            <a href="#galeria" class="mobile-nav-link font-label-lg text-[#2C2420] text-base py-4 border-b border-[#E8D5CF]/30 hover:text-primary transition-colors duration-200">Nuestro espacio</a>
+            <a href="#ubicacion" class="mobile-nav-link font-label-lg text-[#2C2420] text-base py-4 border-b border-[#E8D5CF]/30 hover:text-primary transition-colors duration-200">Ubicación</a>
+        </div>
+        <!-- CTA -->
+        <div class="px-6 pb-8">
+            <a href="https://wa.me/message/3IA5SBJEWSUZK1" target="_blank" rel="noopener noreferrer"
+               class="mobile-nav-link flex items-center justify-center w-full px-6 py-3.5 border border-primary text-primary font-label-lg text-sm uppercase tracking-wider rounded hover:bg-primary hover:text-white transition-colors duration-300">
+                Reserva tu hora
+            </a>
+        </div>
+    </nav>
+</div>
 <main>
 <!-- Hero Section -->
 <div class="relative h-screen" id="hero-scroll-track">
@@ -359,6 +389,7 @@
                 autoplay
                 muted
                 playsinline
+                webkit-playsinline
                 poster="foto%20sector%20pelo.webp"
                 style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; opacity:0.45; filter: brightness(0.95) contrast(1.02) saturate(0.95);"
             >
@@ -1374,12 +1405,57 @@
                 updateHeaderBg();
             }
 
+            // ── Mobile Menu ──────────────────────────────────────────
+            const menuBtn     = document.getElementById('mobile-menu-btn');
+            const menuClose   = document.getElementById('mobile-menu-close');
+            const menuOverlay = document.getElementById('mobile-menu');
+            const menuPanel   = document.getElementById('mobile-menu-panel');
+            const menuBackdrop= document.getElementById('mobile-menu-backdrop');
+
+            function openMobileMenu() {
+                menuOverlay.classList.remove('pointer-events-none');
+                menuPanel.classList.remove('translate-x-full');
+                menuPanel.classList.add('translate-x-0');
+                menuBackdrop.classList.remove('opacity-0');
+                menuBackdrop.classList.add('opacity-100');
+                if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeMobileMenu() {
+                menuPanel.classList.remove('translate-x-0');
+                menuPanel.classList.add('translate-x-full');
+                menuBackdrop.classList.remove('opacity-100');
+                menuBackdrop.classList.add('opacity-0');
+                if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+                document.body.style.overflow = '';
+                setTimeout(() => menuOverlay.classList.add('pointer-events-none'), 300);
+            }
+
+            if (menuBtn)     menuBtn.addEventListener('click', openMobileMenu);
+            if (menuClose)   menuClose.addEventListener('click', closeMobileMenu);
+            if (menuBackdrop) menuBackdrop.addEventListener('click', closeMobileMenu);
+
+            // Close menu when any nav link is tapped
+            document.querySelectorAll('.mobile-nav-link').forEach(link => {
+                link.addEventListener('click', closeMobileMenu);
+            });
+
+            // ── iOS Safari Video Autoplay Fix ─────────────────────────
             // Lightweight scroll handler: fade hero text out as user scrolls down
             const heroContent = document.getElementById('hero-content');
             
             // Check if we are running locally via file:// protocol
             // Simple scroll handler: fade hero text and video as user scrolls down
             const heroVideo = document.getElementById('hero-video');
+
+            // iOS Safari requires muted to be set via JS too, not just the HTML attribute
+            if (heroVideo) {
+                heroVideo.muted = true;
+                heroVideo.play().catch(() => {
+                    // Autoplay blocked — poster image will show instead (acceptable fallback)
+                });
+            }
 
             function updateHeroScroll() {
                 const scrolled = window.scrollY;
